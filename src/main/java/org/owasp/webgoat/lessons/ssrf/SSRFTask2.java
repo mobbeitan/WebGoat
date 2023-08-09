@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import java.net.URISyntaxException;
 
 @RestController
 @AssignmentHints({"ssrf.hint3"})
@@ -48,7 +49,7 @@ public class SSRFTask2 extends AssignmentEndpoint {
   protected AttackResult furBall(String url) {
     if (url.matches("http://ifconfig\\.pro")) {
       String html;
-      try (InputStream in = new URL(url).openStream()) {
+      try (InputStream in = validateDomain(new URL(url), "sonar.com").openStream()) {
         html =
             new String(in.readAllBytes(), StandardCharsets.UTF_8)
                 .replaceAll("\n", "<br>"); // Otherwise the \n gets escaped in the response
@@ -64,6 +65,35 @@ public class SSRFTask2 extends AssignmentEndpoint {
     }
     var html = "<img class=\"image\" alt=\"image post\" src=\"images/cat.jpg\">";
     return getFailedResult(html);
+  }
+
+  private URI validateDomain(URI uri, String... allowedDomains) {
+     for (String domain : allowedDomains) {
+        if (uri.getHost().equals(domain)) {
+           return uri;
+        }
+     }
+     throw new RuntimeException("Potential SSRF attempt");
+  }
+
+
+  private URL validateDomain(URL url, String... allowedDomains) {
+     try {
+        validateDomain(url.toURI(), allowedDomains);
+     } catch (URISyntaxException e) {
+        throw new RuntimeException("Potential SSRF attempt", e);
+     }
+     return url;
+  }
+
+
+  private String validateDomain(String url, String... allowedDomains) {
+     try {
+        validateDomain(new URI(url), allowedDomains);
+     } catch (URISyntaxException e) {
+        throw new RuntimeException("Potential SSRF attempt", e);
+     }
+     return url;
   }
 
   private AttackResult getFailedResult(String errorMsg) {
