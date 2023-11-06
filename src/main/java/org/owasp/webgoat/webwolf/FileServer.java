@@ -75,7 +75,7 @@ public class FileServer {
     var user = (WebGoatUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     var destinationDir = new File(fileLocation, user.getUsername());
     destinationDir.mkdirs();
-    myFile.transferTo(new File(destinationDir, myFile.getOriginalFilename()));
+    myFile.transferTo(new File(destinationDir, String.valueOf(myFile.getOriginalFilename()).replaceAll("([/\\\\:*?\"<>|])|(^\\s)|([.\\s]$)", "_").replaceAll("\0", "")));
     log.debug("File saved to {}", new File(destinationDir, myFile.getOriginalFilename()));
 
     return new ModelAndView(
